@@ -1,0 +1,43 @@
+name: Build GameXClient APK & Native SO
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-gamexclient:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract GameXClient.zip (Jika Diupload Utuh)
+        run: |
+          if [ -f "GameXClient.zip" ]; then
+            unzip -q -o GameXClient.zip
+          fi
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle & Compile APK + Native C++ (.so)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Build Signed Release & Debug APK
+        run: |
+          gradle assembleRelease assembleDebug --no-daemon
+
+      - name: Upload GameXClient APK & Native Mod (.so)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameXClient-Android-Build-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk
+            app/build/intermediates/stripped_native_libs/release/out/lib/arm64-v8a/*.so
